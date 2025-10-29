@@ -5,12 +5,11 @@
 struct Record {
     unsigned int id;
     char *data;
-    unsigned long timestamp;
     struct Record *next;
 };
 
 /* Function prototypes */
-struct Record* create_record(unsigned int id, const char* data, unsigned long timestamp);
+struct Record* create_record(unsigned int id, const char* data);
 void add_record(struct Record** head, struct Record* new_record);
 void print_records(const struct Record* head);
 void free_records(struct Record* head);

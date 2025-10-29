@@ -3,13 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include "record.h"
 #include "encrypt.h"
 #include "compress.h"
 
 /* Create a new record */
-struct Record* create_record(unsigned int id, const char* data, unsigned long timestamp)
+struct Record* create_record(unsigned int id, const char* data)
 {
     struct Record* new_record;
     new_record = (struct Record*)malloc(sizeof(struct Record));
@@ -25,7 +24,6 @@ struct Record* create_record(unsigned int id, const char* data, unsigned long ti
         free(new_record);
         return NULL;
     }
-    new_record->timestamp = timestamp;
     new_record->next = NULL;
 
     return new_record;
@@ -51,7 +49,6 @@ void print_records(const struct Record* head)
     const struct Record* current = head;
     while (current != NULL) {
         printf("ID: %u\n", current->id);
-        printf("Timestamp: %lu\n", current->timestamp);
         printf("Data: %s\n", current->data);
         printf("--------------------\n");
         current = current->next;
@@ -125,9 +122,8 @@ int load_records(const char* filename, const char* password, struct Record** hea
         if (fread(timestamp_bytes, 1, 8, file) != 8) break;
 
         unsigned long record_length = read_u32_le(length_bytes);
-        unsigned long timestamp = (unsigned long)read_u64_le(timestamp_bytes);
 
-        if (record_length == 0 || record_length > 65536) { /* Max 64KB as per requirements */
+        if (record_length == 0 || record_length > 65536) { 
             break;
         }
 
@@ -164,7 +160,7 @@ int load_records(const char* filename, const char* password, struct Record** hea
         decompressed_data[decompressed_length] = '\0';
 
         /* Create record */
-        struct Record* record = create_record(next_id++, decompressed_data, timestamp);
+        struct Record* record = create_record(next_id++, decompressed_data);
         free(decompressed_data);
 
         if (record != NULL) {
@@ -215,7 +211,6 @@ int save_records(const char* filename, const char* password, const struct Record
         unsigned char timestamp_bytes[8];
 
         write_u32_le(length_bytes, (unsigned long)compressed_length);
-        write_u64_le(timestamp_bytes, (unsigned long long)current->timestamp);
 
         if (fwrite(length_bytes, 1, 4, file) != 4 ||
             fwrite(timestamp_bytes, 1, 8, file) != 8 ||
@@ -242,7 +237,7 @@ struct Record* search_records(struct Record* head, const char* term)
 
     while (current != NULL) {
         if (strstr(current->data, term) != NULL) {
-            struct Record* new_result = create_record(current->id, current->data, current->timestamp);
+            struct Record* new_result = create_record(current->id, current->data);
             add_record(&results, new_result);
         }
         current = current->next;

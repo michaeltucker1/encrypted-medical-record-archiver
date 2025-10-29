@@ -53,7 +53,7 @@ int decompress_rle(const char* input, int input_length, char* output, int output
     return output_pos;
 }
 
-/* Little-endian utility functions */
+/* Little endian utility functions */
 void write_u32_le(unsigned char* buffer, unsigned long value)
 {
     buffer[0] = (unsigned char)(value & 0xFF);

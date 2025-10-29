@@ -1,14 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <termios.h>
-#include <unistd.h>
 #include "record.h"
 #include "encrypt.h"
 #include "compress.h"
 
-#define MAX_RECORD_SIZE 65536 /* 64KB as per requirements */
+#define MAX_RECORD_SIZE 65536 
 #define MAX_PASSWORD_LENGTH 256
 #define DEFAULT_ARCHIVE_FILE "medical.dat"
 #define DEFAULT_PASSWORD "default123"
@@ -21,7 +18,6 @@ void do_view(void);
 void do_search(const char* term);
 void do_sort(void);
 void do_delete(const char* target);
-char* prompt_password(const char* prompt_text);
 void initialize_archive(void);
 
 /* Global variables */
@@ -159,8 +155,7 @@ void do_add(void)
     }
 
     /* Create new record */
-    unsigned long timestamp = (unsigned long)time(NULL);
-    struct Record* new_record = create_record(0, data, timestamp);
+    struct Record* new_record = create_record(0, data);
 
     if (new_record == NULL) {
         fprintf(stderr, "Error: Failed to create record\n");
@@ -253,15 +248,10 @@ void do_sort(void)
 
         while (current->next != last) {
             if (strcmp(current->data, current->next->data) > 0) {
-                /* Swap data and timestamps */
+                /* Swap data */
                 char* temp_data = current->data;
-                unsigned long temp_timestamp = current->timestamp;
-
                 current->data = current->next->data;
-                current->timestamp = current->next->timestamp;
-
                 current->next->data = temp_data;
-                current->next->timestamp = temp_timestamp;
 
                 swapped = 1;
             }
@@ -376,46 +366,4 @@ void do_delete(const char* target)
     } else {
         printf("Error: Failed to save updated archive.\n");
     }
-}
-char* prompt_password(const char* prompt_text)
-{
-    struct termios old_termios, new_termios;
-    char* password = malloc(MAX_PASSWORD_LENGTH);
-    int i = 0;
-    int ch;
-
-    if (password == NULL) {
-        return NULL;
-    }
-
-    printf("%s", prompt_text);
-    fflush(stdout);
-
-    /* Get current terminal settings */
-    tcgetattr(STDIN_FILENO, &old_termios);
-    new_termios = old_termios;
-
-    /* Disable echo */
-    new_termios.c_lflag &= ~(ECHO | ICANON);
-    new_termios.c_cc[VMIN] = 1;
-    new_termios.c_cc[VTIME] = 0;
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_termios);
-
-    /* Read password character by character */
-    while (i < MAX_PASSWORD_LENGTH - 1) {
-        ch = getchar();
-        if (ch == '\n' || ch == '\r' || ch == EOF) {
-            break;
-        }
-        password[i++] = (char)ch;
-    }
-    password[i] = '\0';
-
-    /* Restore terminal settings */
-    tcsetattr(STDIN_FILENO, TCSANOW, &old_termios);
-
-    printf("\n");
-
-    return password;
 }
